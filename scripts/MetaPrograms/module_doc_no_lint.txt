@@ -7,10 +7,8 @@ PhysLean/ClassicalMechanics/RigidBody/SolidSphere.lean
 PhysLean/ClassicalMechanics/Scattering/RigidSphere.lean
 PhysLean/ClassicalMechanics/VectorFields.lean
 PhysLean/ClassicalMechanics/Vibrations/LinearTriatomic.lean
-PhysLean/ClassicalMechanics/WaveEquation/Basic.lean
 PhysLean/ClassicalMechanics/WaveEquation/HarmonicWave.lean
 PhysLean/CondensedMatter/Basic.lean
-PhysLean/CondensedMatter/TightBindingChain/Basic.lean
 PhysLean/Cosmology/Basic.lean
 PhysLean/Cosmology/FLRW/Basic.lean
 PhysLean/Electromagnetism/Basic.lean
