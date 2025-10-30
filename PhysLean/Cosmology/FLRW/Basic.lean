@@ -6,6 +6,7 @@ Authors: Luis Gabriel C. Bariuan, Joseph Tooby-Smith
 import Mathlib.Analysis.Complex.Trigonometric
 import PhysLean.Meta.Informal.SemiFormal
 import PhysLean.SpaceAndTime.Space.Basic
+import PhysLean.SpaceAndTime.Time.Basic
 /-!
 
 # The Friedmann-Lemaître-Robertson-Walker metric
@@ -16,6 +17,7 @@ Parts of this file is currently informal or semiformal.
 
 open Filter
 open scoped Topology
+open Time
 
 namespace Cosmology
 
@@ -106,7 +108,7 @@ At time `t` the equation reads:
 `(a'(t) / a(t))^2 = (8πG/3) ρ(t) − k c^2 / a(t)^2 + Λ c^2 / 3`.
 
 -/
-def FirstOrderFriedmann (a ρ: ℝ → ℝ) (k Λ G c : ℝ) (t : ℝ) : Prop :=
+def FirstOrderFriedmann (a ρ: ℝ → ℝ) (k Λ G c : ℝ) (t : Time) : Prop :=
     ((deriv a t / a t)^2
       = ((8 * Real.pi * G) / 3) * ρ t - k * c^2 / (a t)^2 + Λ * c ^2/ 3)
 
@@ -129,7 +131,7 @@ At time `t` the equation reads:
 `(a''(t) / a (t)) = - (4πG/3) * (ρ(t) + 3 * p(t) / c^2) + Λ * c^2 / 3`.
 
 -/
-def SecondOrderFriedmann (a ρ p: ℝ → ℝ) (Λ G c : ℝ) (t : ℝ) : Prop :=
+def SecondOrderFriedmann (a ρ p: ℝ → ℝ) (Λ G c : ℝ) (t : Time) : Prop :=
     (deriv (deriv a) t) / a t = - (4 * Real.pi * G / 3) * (ρ t + 3 * p t / c^2) + Λ * c^2 / 3
 
 /-- The hubble constant defined in terms of the scale factor
@@ -139,7 +141,7 @@ def SecondOrderFriedmann (a ρ p: ℝ → ℝ) (Λ G c : ℝ) (t : ℝ) : Prop :
 
   Semiformal implementation note: Implement also scoped notation. -/
 
-noncomputable def hubbleConstant (a : ℝ → ℝ) (t : ℝ) : ℝ :=
+noncomputable def hubbleConstant (a : ℝ → ℝ) (t : Time) : ℝ :=
     deriv a t / a t
 
 /-- The deceleration parameter defined in terms of the scale factor
@@ -149,7 +151,7 @@ noncomputable def hubbleConstant (a : ℝ → ℝ) (t : ℝ) : ℝ :=
 
   Semiformal implementation note: Implement also scoped notation. -/
 
-noncomputable def decelerationParameter (a : ℝ → ℝ) (t : ℝ) : ℝ :=
+noncomputable def decelerationParameter (a : ℝ → ℝ) (t : Time) : ℝ :=
     - (deriv (deriv a) t * a t) / (deriv a t)^2
 
 /-- The deceleration parameter is equal to `- (1 + (dₜ H)/H^2)`. -/
