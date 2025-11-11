@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Tooby-Smith
 -/
 import PhysLean.Meta.Informal.Basic
+import PhysLean.SpaceAndTime.Space.Basic
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Mathlib.Topology.ContinuousMap.CompactlySupported
 import Mathlib.Geometry.Manifold.IsManifold.Basic
@@ -238,8 +239,8 @@ instance : MeasurableSpace Time := borel Time
 instance : BorelSpace Time where
   measurable_eq := by rfl
 
-instance : FiniteDimensional ℝ Time := by
-  refine Module.finite_of_rank_eq_one ?_
+@[simp]
+lemma rank_eq_one : Module.rank ℝ Time = 1 := by
   rw [@rank_eq_one_iff]
   use 1
   constructor
@@ -248,6 +249,21 @@ instance : FiniteDimensional ℝ Time := by
     use v.val
     ext
     simp [one_val]
+
+@[simp]
+lemma finRank_eq_one : Module.finrank ℝ Time = 1 := by
+  rw [@finrank_eq_one_iff']
+  use 1
+  constructor
+  · simp
+  · intro v
+    use v.val
+    ext
+    simp [one_val]
+
+instance : FiniteDimensional ℝ Time := by
+  refine Module.finite_of_rank_eq_one ?_
+  simp
 
 noncomputable instance : InnerProductSpace ℝ Time where
   norm_sq_eq_re_inner := by intros; simp [norm]; ring
@@ -318,37 +334,6 @@ lemma val_measurableEmbedding : MeasurableEmbedding Time.val where
 lemma val_measurePreserving : MeasurePreserving Time.val volume volume :=
   LinearIsometryEquiv.measurePreserving toRealLIE
 
-/-!
-
-## Derivatives
-
--/
-
-variable {M : Type} {d : ℕ} {t : Time}
-
-/-- Given a function `f : Time → M` the derivative of `f`. -/
-noncomputable def deriv [AddCommGroup M] [Module ℝ M] [TopologicalSpace M]
-    (f : Time → M) : Time → M :=
-  (fun t => fderiv ℝ f t 1)
-
-@[inherit_doc deriv]
-scoped notation "∂ₜ" => deriv
-
-lemma deriv_eq [AddCommGroup M] [Module ℝ M] [TopologicalSpace M]
-    (f : Time → M) (t : Time) : Time.deriv f t = fderiv ℝ f t 1 := rfl
-
-lemma deriv_smul (f : Time → EuclideanSpace ℝ (Fin d)) (k : ℝ)
-    (hf : Differentiable ℝ f) :
-    ∂ₜ (fun t => k • f t) t = k • ∂ₜ (fun t => f t) t := by
-  rw [deriv, fderiv_fun_const_smul]
-  rfl
-  fun_prop
-
-lemma deriv_neg [NormedAddCommGroup M] [NormedSpace ℝ M] (f : Time → M) :
-    ∂ₜ (-f) t = -∂ₜ f t := by
-  rw [deriv, fderiv_neg]
-  rfl
-
 @[fun_prop]
 lemma val_differentiable : Differentiable ℝ Time.val := by
   change Differentiable ℝ toRealCLM
@@ -360,38 +345,48 @@ lemma fderiv_val (t : Time) : fderiv ℝ Time.val t 1 = 1 := by
   rw [ContinuousLinearMap.fderiv, toRealCLM]
   simp
 
-open MeasureTheory ContDiff InnerProductSpace Time
+/-- The orthonomral basis on `Time` defined by `1`. -/
+noncomputable def basis : OrthonormalBasis (Fin 1) ℝ Time where
+  repr := {
+    toFun := fun x => fun _ => x
+    invFun := fun f => ⟨f 0⟩
+    left_inv := by
+      intro x
+      rfl
+    right_inv := by
+      intro f
+      ext i
+      fin_cases i
+      rfl
+    map_add' := by
+      intro f g
+      ext i
+      fin_cases i
+      rfl
+    map_smul' := by
+      intro c f
+      ext i
+      fin_cases i
+      rfl
+    norm_map' := by
+      intro x
+      simp only [Fin.isValue, LinearEquiv.coe_mk, LinearMap.coe_mk, AddHom.coe_mk]
+      rw [@PiLp.norm_eq_of_L2]
+      simp only [Finset.univ_unique, Fin.default_eq_zero, Fin.isValue, Real.norm_eq_abs, sq_abs,
+        Finset.sum_const, Finset.card_singleton, one_smul]
+      rw [Real.sqrt_sq_eq_abs]
+      rfl
+  }
 
-@[fun_prop]
-lemma deriv_differentiable_of_contDiff {M : Type}
-    [NormedAddCommGroup M] [NormedSpace ℝ M] (f : Time → M) (hf : ContDiff ℝ ∞ f) :
-    Differentiable ℝ (∂ₜ f) := by
-  unfold deriv
-  change Differentiable ℝ ((fun x => x 1) ∘ (fun t => fderiv ℝ f t))
-  apply Differentiable.comp
-  · fun_prop
-  · rw [contDiff_infty_iff_fderiv, contDiff_infty_iff_fderiv] at hf
-    exact hf.2.1
+@[simp]
+lemma basis_apply_eq_one (i : Fin 1) :
+    basis i = 1 := by
+  fin_cases i
+  simp [basis]
+  rfl
 
-@[fun_prop]
-lemma deriv_contDiff_of_contDiff {M : Type}
-    [NormedAddCommGroup M] [NormedSpace ℝ M] (f : Time → M) (hf : ContDiff ℝ ∞ f) :
-    ContDiff ℝ ∞ (∂ₜ f) := by
-  unfold deriv
-  change ContDiff ℝ ∞ ((fun x => x 1) ∘ (fun t => fderiv ℝ f t))
-  apply ContDiff.comp
-  · fun_prop
-  · fun_prop
-
-lemma deriv_euclid { μ} {f : Time→ EuclideanSpace ℝ (Fin n)}
-    (hf : Differentiable ℝ f) (t : Time) :
-    deriv (fun t => f t μ) t = deriv (fun t => f t) t μ := by
-  rw [deriv_eq]
-  change fderiv ℝ (EuclideanSpace.proj μ ∘ fun x => f x) t 1 = _
-  rw [fderiv_comp]
-  · simp
-    rw [← deriv_eq]
-  · fun_prop
-  · fun_prop
+lemma volume_eq_basis_addHaar :
+    (volume (α := Time)) = basis.toBasis.addHaar := by
+  exact (OrthonormalBasis.addHaar_eq_volume _).symm
 
 end Time
