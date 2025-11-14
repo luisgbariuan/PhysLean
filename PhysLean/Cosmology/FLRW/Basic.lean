@@ -18,6 +18,7 @@ Parts of this file is currently informal or semiformal.
 open Filter
 open scoped Topology
 open Time
+open Real
 
 namespace Cosmology
 
@@ -134,41 +135,59 @@ At time `t` the equation reads:
 def SecondOrderFriedmann (a ρ p: ℝ → ℝ) (Λ G c : ℝ) (t : Time) : Prop :=
     (deriv (deriv a) t) / a t = - (4 * Real.pi * G / 3) * (ρ t + 3 * p t / c^2) + Λ * c^2 / 3
 
+/-- The equation of state p = w ρ-/
+noncomputable def perfectfluidpressure (w ρ : ℝ) : ℝ :=
+    w * ρ
+
+/-- Matter is pressureless.-/
+
 /-- The hubble constant defined in terms of the scale factor
   as `(dₜ a) / a`.
 
-  The notation `H` is used for the `hubbleConstant`.
+  The notation `H` is used for the `hubbleConstant`.-/
 
-  Semiformal implementation note: Implement also scoped notation. -/
-
-noncomputable def hubbleConstant (a : ℝ → ℝ) (t : Time) : ℝ :=
+@[simp] noncomputable def hubbleConstant (a : ℝ → ℝ) (t : Time) : ℝ :=
     deriv a t / a t
 
 /-- The deceleration parameter defined in terms of the scale factor
   as `- (dₜdₜ a) a / (dₜ a)^2`.
 
-  The notation `q` is used for the `decelerationParameter`.
-
-  Semiformal implementation note: Implement also scoped notation. -/
-
-noncomputable def decelerationParameter (a : ℝ → ℝ) (t : Time) : ℝ :=
+  The notation `q` is used for the `decelerationParameter`. -/
+@[simp] noncomputable def decelerationParameter (a : ℝ → ℝ) (t : Time) : ℝ :=
     - (deriv (deriv a) t * a t) / (deriv a t)^2
 
-/-- The deceleration parameter is equal to `- (1 + (dₜ H)/H^2)`. -/
-informal_lemma decelerationParameter_eq_one_plus_hubbleConstant where
-  deps := []
-  tag := "6Z23H"
-
 /-- The time evolution of the hubble parameter is equal to `dₜ H = - H^2 (1 + q)`. -/
-informal_lemma time_evolution_hubbleConstant where
-  deps := []
-  tag := "6Z3BS"
+lemma time_evolution_hubbleConstant
+  (a : ℝ → ℝ) (t : Time)
+  (ha  : ContDiffAt ℝ 2 a t)
+  (h₁ : a t ≠ 0)
+  (h₂ : deriv a t ≠ 0) :
+  deriv (fun s => hubbleConstant a s) t
+    = - (hubbleConstant a t)^2 * (1 + decelerationParameter a t) := by
+    calc
+     deriv (fun s => hubbleConstant a s) t =
+          _root_.deriv (fun s => deriv a s / a s) t := by sorry
+      _ = - (hubbleConstant a t)^2 * (1 + decelerationParameter a t) := by sorry
+
+/-- The deceleration parameter is equal to `- (1 + (dₜ H)/H^2)`. -/
+lemma decelerationParameter_eq_one_plus_hubbleConstant
+  (a : ℝ → ℝ) (t : Time)
+  (ha  : DifferentiableAt ℝ a t)
+  (ha' : DifferentiableAt ℝ (deriv a) t)
+  (h₁ : a t ≠ 0)
+  (h₂ : deriv a t ≠ 0) :
+  decelerationParameter a t =
+    - (1 + deriv (fun s => hubbleConstant a s) t / (hubbleConstant a t)^2) := by
+    calc
+      decelerationParameter a t = - (deriv (deriv a) t * a t) / (deriv a t)^2 := by simp
+      _ = - (1 + deriv (fun s => hubbleConstant a s) t / (hubbleConstant a t)^2) := by sorry
 
 /-- There exists a time at which the hubble constant decreases if and only if
   there exists a time where the deceleration parameter is less then `-1`. -/
 informal_lemma hubbleConstant_decrease_iff where
   deps := []
   tag := "6Z3FS"
+
 end FriedmannEquation
 end FLRW
 
