@@ -3,7 +3,7 @@ Copyright (c) 2025 Joseph Tooby-Smith. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Tooby-Smith
 -/
-import PhysLean.SpaceAndTime.Space.Distributions.Basic
+import PhysLean.SpaceAndTime.Space.Derivatives.Curl
 /-!
 
 # Translations on space
@@ -113,12 +113,12 @@ lemma translateD_apply {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
 open InnerProductSpace
 
 @[simp]
-lemma translateD_gradD {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
+lemma translateD_distGrad {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
     (T : (Space d) →d[ℝ] ℝ) :
-    gradD (translateD a T) = translateD a (gradD T) := by
-  apply gradD_eq_of_inner
+    distGrad (translateD a T) = translateD a (distGrad T) := by
+  apply distGrad_eq_of_inner
   intro η y
-  rw [translateD_apply, gradD_inner_eq]
+  rw [translateD_apply, distGrad_inner_eq]
   rw [fderivD_apply, fderivD_apply, translateD_apply]
   congr 2
   ext x
@@ -130,18 +130,12 @@ lemma translateD_gradD {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
 
 open MeasureTheory
 lemma translateD_ofFunction {d : ℕ} (a : EuclideanSpace ℝ (Fin d.succ))
-    (f : Space d.succ → X) (hf : IsDistBounded f)
-    (hae: AEStronglyMeasurable f volume) :
-    translateD a (ofFunction f hf hae) =
-    ofFunction (fun x => f (x - a)) (IsDistBounded.comp_add_right hf fun i => -a i)
-    (by
-      change AEStronglyMeasurable (f ∘ fun x => x - a) volume
-      rw [MeasureTheory.MeasurePreserving.aestronglyMeasurable_comp_iff (μb := volume)]
-      · fun_prop
-      · exact measurePreserving_sub_right volume a
-      · exact measurableEmbedding_subRight a) := by
+    (f : Space d.succ → X) (hf : IsDistBounded f) :
+    translateD a (distOfFunction f hf) =
+    distOfFunction (fun x => f (x - a))
+    (IsDistBounded.comp_add_right hf fun i => -a i) := by
   ext η
-  rw [translateD_apply, ofFunction_apply, ofFunction_apply]
+  rw [translateD_apply, distOfFunction_apply, distOfFunction_apply]
   trans ∫ (x : EuclideanSpace ℝ (Fin d.succ)), η ((x - a) + a) • f (x - a); swap
   · simp
   let f' := fun x : EuclideanSpace ℝ (Fin d.succ) => η (x + a) • f (x)
@@ -152,12 +146,12 @@ lemma translateD_ofFunction {d : ℕ} (a : EuclideanSpace ℝ (Fin d.succ))
   simp [f']
 
 @[simp]
-lemma divD_translateD {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
+lemma distDiv_translateD {d : ℕ} (a : EuclideanSpace ℝ (Fin d))
     (T : (Space d) →d[ℝ] EuclideanSpace ℝ (Fin d)) :
-    divD (translateD a T) = translateD a (divD T) := by
+    distDiv (translateD a T) = translateD a (distDiv T) := by
   ext η
-  rw [divD_apply_eq_sum_fderivD]
-  rw [translateD_apply, divD_apply_eq_sum_fderivD]
+  rw [distDiv_apply_eq_sum_fderivD]
+  rw [translateD_apply, distDiv_apply_eq_sum_fderivD]
   congr
   funext i
   rw [fderivD_apply, fderivD_apply, translateD_apply]

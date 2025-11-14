@@ -5,13 +5,36 @@ Authors: Joseph Tooby-Smith
 -/
 import PhysLean.Mathematics.Distribution.Basic
 import PhysLean.Meta.Linters.Sorry
+import PhysLean.SpaceAndTime.Space.Basic
 import Mathlib.MeasureTheory.Constructions.HaarToSphere
 /-!
 
-# The inverse pow measure on Euclidean space
+# The radial angular measure on Space
 
-The measure `‖x‖^(- d) dx` on `EuclideanSpace ℝ (Fin d.succ)`, cancelling
-the radius contribution from the measure in spherical coordinates.
+## i. Overview
+
+The normal measure on `Space d` is `r^(d-1) dr dΩ` in spherical coordinates,
+where `dΩ` is the angular measure on the unit sphere. The radial angular measure
+is the measure `dr dΩ`, cancelling the radius contribution from the measure in spherical
+coordinates.
+
+This file is equivalent to `invPowMeasure`, which will slowly be deprecated.
+
+## ii. Key results
+
+- `radialAngularMeasure`: The radial angular measure on `Space d`.
+
+## iii. Table of contents
+
+- A. The definition of the radial angular measure
+  - A.1. Basic equalities
+- B. Integrals with respect to radialAngularMeasure
+- C. HasTemperateGrowth of measures
+  - C.1. Integrability of powers
+  - C.2. radialAngularMeasure has temperate growth
+
+## iv. References
+
 -/
 open SchwartzMap NNReal
 noncomputable section
@@ -19,32 +42,58 @@ noncomputable section
 variable (𝕜 : Type) {E F F' : Type} [RCLike 𝕜] [NormedAddCommGroup E] [NormedAddCommGroup F]
   [NormedAddCommGroup F']
 
-namespace Distribution
-
 variable [NormedSpace ℝ E] [NormedSpace ℝ F]
 
+namespace Space
+
 open MeasureTheory
 
 /-!
 
-## The measures.
+## A. The definition of the radial angular measure
 
 -/
 
-/-- The measure on `EuclideanSpace ℝ (Fin 3)` weighted by `1 / ‖x‖ ^ 2`. -/
-def invPowMeasure {dm1 : ℕ} : Measure (EuclideanSpace ℝ (Fin dm1.succ)) :=
-  volume.withDensity (fun x : EuclideanSpace ℝ (Fin dm1.succ) => ENNReal.ofReal (1 / ‖x‖ ^ dm1))
+/-- The measure on `Space d` weighted by `1 / ‖x‖ ^ (d - 1)`. -/
+def radialAngularMeasure {d : ℕ} : Measure (Space d) :=
+  volume.withDensity (fun x : Space d => ENNReal.ofReal (1 / ‖x‖ ^ (d - 1)))
 
-open MeasureTheory
 /-!
 
-## Integrals with respect to the measures.
+### A.1. Basic equalities
 
 -/
 
-lemma integral_invPowMeasure {dm1 : ℕ} (f : EuclideanSpace ℝ (Fin dm1.succ) → F) :
-    ∫ x, f x ∂invPowMeasure = ∫ x, (1 / ‖x‖^dm1) • f x := by
-  dsimp [invPowMeasure]
+lemma radialAngularMeasure_eq_volume_withDensity {d : ℕ} : radialAngularMeasure =
+    volume.withDensity (fun x : Space d => ENNReal.ofReal (1 / ‖x‖ ^ (d - 1))) := by
+  rfl
+
+@[simp]
+lemma radialAngularMeasure_zero_eq_volume :
+    radialAngularMeasure (d := 0) = volume := by
+  simp [radialAngularMeasure]
+
+lemma integrable_radialAngularMeasure_iff {d : ℕ} {f : Space d → F} :
+    Integrable f (radialAngularMeasure (d := d)) ↔
+      Integrable (fun x => (1 / ‖x‖ ^ (d - 1)) • f x) volume := by
+  dsimp [radialAngularMeasure]
+  erw [integrable_withDensity_iff_integrable_smul₀ (by fun_prop)]
+  simp only [one_div]
+  refine integrable_congr ?_
+  filter_upwards with x
+  rw [Real.toNNReal_of_nonneg, NNReal.smul_def]
+  simp only [inv_nonneg, norm_nonneg, pow_nonneg, coe_mk]
+  positivity
+
+/-!
+
+## B. Integrals with respect to radialAngularMeasure
+
+-/
+
+lemma integral_radialAngularMeasure {d : ℕ} (f : Space d → F) :
+    ∫ x, f x ∂radialAngularMeasure = ∫ x, (1 / ‖x‖ ^ (d - 1)) • f x := by
+  dsimp [radialAngularMeasure]
   erw [integral_withDensity_eq_integral_smul (by fun_prop)]
   congr
   funext x
@@ -54,10 +103,15 @@ lemma integral_invPowMeasure {dm1 : ℕ} (f : EuclideanSpace ℝ (Fin dm1.succ) 
 
 /-!
 
-## HasTemperateGrowth of measures
+## C. HasTemperateGrowth of measures
 
 -/
 
+/-!
+
+### C.1. Integrability of powers
+
+-/
 private lemma integrable_neg_pow_on_ioi (n : ℕ) :
     IntegrableOn (fun x : ℝ => (|((1 : ℝ) + ↑x) ^ (- (n + 2) : ℝ)|)) (Set.Ioi 0) := by
   rw [MeasureTheory.integrableOn_iff_comap_subtypeVal]
@@ -117,7 +171,6 @@ private lemma integrable_neg_pow_on_ioi (n : ℕ) :
       simp only [Nat.cast_add, Nat.cast_ofNat, neg_add_rev]
       positivity
       positivity
-
     rw [integral_Ioi_rpow_of_lt]
     field_simp
     have h0 : (-2 + -(n : ℝ) + 1) ≠ 0 := by
@@ -136,10 +189,16 @@ private lemma integrable_neg_pow_on_ioi (n : ℕ) :
   · simp
   · simp
 
-lemma invPowMeasure_integrable_pow_neg_two {dm1 : ℕ} :
-    Integrable (fun x : EuclideanSpace ℝ (Fin dm1.succ) => (1 + ‖x‖) ^ (- (dm1 + 2) : ℝ))
-      invPowMeasure := by
-  simp [invPowMeasure]
+lemma radialAngularMeasure_integrable_pow_neg_two {d : ℕ} :
+    Integrable (fun x : Space d => (1 + ‖x‖) ^ (- (d + 1) : ℝ))
+      radialAngularMeasure := by
+  match d with
+  | 0 => simp
+  | dm1 + 1 =>
+  suffices h1 : Integrable (fun x => (1 + ‖x‖) ^ (-(dm1 + 2) : ℝ)) radialAngularMeasure by
+    convert h1 using 3
+    grind
+  simp [radialAngularMeasure]
   rw [MeasureTheory.integrable_withDensity_iff]
   swap
   · fun_prop
@@ -250,7 +309,7 @@ lemma invPowMeasure_integrable_pow_neg_two {dm1 : ℕ} :
       simpa using h1
       exact measurableSet_Ioi
   rw [← MeasureTheory.integrableOn_univ]
-  simp at h2
+  simp only [Nat.succ_eq_add_one, neg_add_rev] at h2
   apply MeasureTheory.IntegrableOn.congr_set_ae h2
   rw [← MeasureTheory.ae_eq_set_compl]
   trans (∅ : Set (EuclideanSpace ℝ (Fin dm1.succ)))
@@ -260,9 +319,15 @@ lemma invPowMeasure_integrable_pow_neg_two {dm1 : ℕ} :
   · symm
     simp
 
-instance (dm1 : ℕ) : Measure.HasTemperateGrowth (invPowMeasure (dm1 := dm1)) where
-  exists_integrable := by
-    use dm1 + 2
-    simpa using invPowMeasure_integrable_pow_neg_two (dm1 := dm1)
+/-!
 
-end Distribution
+### C.2. radialAngularMeasure has temperate growth
+
+-/
+
+instance (d : ℕ) : Measure.HasTemperateGrowth (radialAngularMeasure (d := d)) where
+  exists_integrable := by
+    use d + 1
+    simpa using radialAngularMeasure_integrable_pow_neg_two (d := d)
+
+end Space

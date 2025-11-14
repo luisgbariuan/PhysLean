@@ -6,6 +6,7 @@ Authors: Matteo Cipollina, Joseph Tooby-Smith
 import PhysLean.Relativity.Tensors.RealTensor.Metrics.Basic
 import Mathlib.Geometry.Manifold.IsManifold.Basic
 import PhysLean.Relativity.Tensors.Elab
+import Mathlib.Analysis.Distribution.SchwartzSpace
 /-!
 
 # Lorentz Vectors
@@ -54,6 +55,10 @@ instance isNormedAddCommGroup (d : ℕ) : NormedAddCommGroup (Vector d) :=
 instance isNormedSpace (d : ℕ) :
     NormedSpace ℝ (Vector d) :=
   inferInstanceAs (NormedSpace ℝ (EuclideanSpace ℝ (Fin 1 ⊕ Fin d)))
+
+/-- The Euclidean inner product structure on `Vector`. -/
+instance innerProductSpace (d : ℕ) : InnerProductSpace ℝ (Vector d) :=
+  inferInstanceAs (InnerProductSpace ℝ (EuclideanSpace ℝ (Fin 1 ⊕ Fin d)))
 
 /-- The instance of a `ChartedSpace` on `Vector d`. -/
 instance : ChartedSpace (Vector d) (Vector d) := chartedSpaceSelf (Vector d)
@@ -245,6 +250,28 @@ lemma map_apply_eq_basis_mulVec {d : ℕ} (f : Vector d →ₗ[ℝ] Vector d) (p
     (f p) = (LinearMap.toMatrix basis basis) f *ᵥ p := by
   exact Eq.symm (LinearMap.toMatrix_mulVec_repr basis basis f p)
 
+lemma sum_basis_eq_zero_iff {d : ℕ} (f : Fin 1 ⊕ Fin d → ℝ) :
+    (∑ μ, f μ • basis μ) = 0 ↔ ∀ μ, f μ = 0 := by
+  apply Iff.intro
+  · intro h
+    have h1 := (linearIndependent_iff').mp basis.linearIndependent Finset.univ f h
+    intro μ
+    exact h1 μ (by simp)
+  · intro h
+    simp [h]
+
+lemma sum_inl_inr_basis_eq_zero_iff {d : ℕ} (f₀ : ℝ) (f : Fin d → ℝ) :
+    f₀ • basis (Sum.inl 0) + (∑ i, f i • basis (Sum.inr i)) = 0 ↔
+    f₀ = 0 ∧ ∀ i, f i = 0 := by
+  let f' : Fin 1 ⊕ Fin d → ℝ := fun μ =>
+    match μ with
+    | Sum.inl 0 => f₀
+    | Sum.inr i => f i
+  have h1 : f₀ • basis (Sum.inl 0) + (∑ i, f i • basis (Sum.inr i))
+    = ∑ μ, f' μ • basis μ := by simp [f']
+  rw [h1, sum_basis_eq_zero_iff]
+  simp [f']
+
 /-!
 
 ## The action of the Lorentz group
@@ -346,6 +373,17 @@ def actionCLM {d : ℕ} (Λ : LorentzGroup d) :
 
 lemma actionCLM_apply {d : ℕ} (Λ : LorentzGroup d) (p : Vector d) :
     actionCLM Λ p = Λ • p := rfl
+
+lemma actionCLM_injective {d : ℕ} (Λ : LorentzGroup d) :
+    Function.Injective (actionCLM Λ) := by
+  intro x1 x2
+  simp [actionCLM_apply]
+
+lemma actionCLM_surjective {d : ℕ} (Λ : LorentzGroup d) :
+    Function.Surjective (actionCLM Λ) := by
+  intro x1
+  use (actionCLM Λ⁻¹) x1
+  simp [actionCLM_apply]
 
 lemma smul_basis {d : ℕ} (Λ : LorentzGroup d) (μ : Fin 1 ⊕ Fin d) :
     Λ • basis μ = ∑ ν, Λ.1 ν μ • basis ν := by
