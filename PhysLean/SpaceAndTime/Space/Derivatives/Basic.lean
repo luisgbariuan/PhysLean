@@ -8,7 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 import Mathlib.Analysis.Calculus.Gradient.Basic
-import PhysLean.Mathematics.Distribution.Function.OfFunction
+import PhysLean.SpaceAndTime.Space.DistOfFunction
 import Mathlib.MeasureTheory.SpecificCodomains.WithLp
 /-!
 
@@ -88,6 +88,14 @@ lemma deriv_eq_fderiv_basis [AddCommGroup M] [Module ℝ M] [TopologicalSpace M]
   simp only [EuclideanSpace.single_apply, basis_apply]
   congr 1
   exact Lean.Grind.eq_congr' rfl rfl
+
+lemma fderiv_eq_sum_deriv {M d} [AddCommGroup M] [Module ℝ M] [TopologicalSpace M]
+    (f : Space d → M) (x y : Space d) :
+    fderiv ℝ f x y = ∑ i : Fin d, y i • ∂[i] f x := by
+  have h1 : y = ∑ i, y i • basis i := by
+    exact Eq.symm (OrthonormalBasis.sum_repr basis y)
+  conv_lhs => rw [h1]
+  simp [deriv_eq_fderiv_basis]
 
 /-!
 
